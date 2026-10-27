@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Novo pedido · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="request-layout">
+  <section class="form-panel request-panel"><a href="{{ url_for('dashboard') }}" class="back-link">← Meus pedidos</a><div class="overline">NOVA SOLICITAÇÃO</div><h1>Conte sua ideia<span class="heading-dot">.</span></h1><p class="subtle">Quanto mais detalhes você compartilhar, melhor conseguimos entender o projeto e preparar um orçamento.</p>
+    <form method="post" enctype="multipart/form-data" class="form-stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field"><label for="title">Nome do projeto <span class="required">*</span></label><input id="title" name="title" maxlength="120" minlength="4" required placeholder="Ex.: Sistema de estoque para minha loja" value="{{ request.form.get('title','') }}"></div>
+      <div class="field"><label for="project_type">Que tipo de software você precisa? <span class="required">*</span></label><select id="project_type" name="project_type" required><option value="">Selecione uma categoria</option>{% for k,v in type_labels.items() %}<option value="{{ k }}" {% if request.form.get('project_type') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="description">Descrição do pedido <span class="required">*</span></label><textarea id="description" name="description" rows="8" minlength="20" maxlength="12000" required placeholder="O que o software deve fazer? Quem irá usar? Quais funcionalidades você imagina?">{{ request.form.get('description','') }}</textarea><span class="hint">Inclua recursos, referências e tudo que considerar importante.</span></div>
+      <div class="field-row"><div class="field"><label for="budget">Orçamento estimado <span class="optional">(opcional)</span></label><input id="budget" name="budget" maxlength="80" placeholder="Ex.: Quero receber uma proposta" value="{{ request.form.get('budget','') }}"></div><div class="field"><label for="desired_date">Prazo desejado <span class="optional">(opcional)</span></label><input id="desired_date" name="desired_date" type="date" value="{{ request.form.get('desired_date','') }}"></div></div>
+      <div class="field"><label for="attachments">Arquivos e referências <span class="optional">(opcional)</span></label><label class="upload-zone" for="attachments"><span class="upload-symbol">↑</span><b>Clique para escolher os arquivos</b><span>Imagens, documentos, código, ZIP e outros arquivos</span><small>Até {{ max_files }} arquivos · {{ max_file_mb }} MB cada · máximo total de 50 MB</small></label><input class="visually-hidden" type="file" id="attachments" name="attachments" multiple data-file-label="file-label"><div class="file-preview" id="file-label" aria-live="polite"></div></div>
+      <button class="btn btn-primary btn-wide" type="submit">Enviar solicitação <span>↗</span></button><p class="tiny-text">O envio do pedido não representa uma cobrança ou contratação automática. Os detalhes serão combinados após a análise.</p>
+    </form>
+  </section>
+  <aside class="request-aside"><div class="sticky-side"><div class="callout-icon">✦</div><h3>Depois que você enviar...</h3><div class="timeline-item"><span>1</span><p>Seu projeto será registrado em sua conta.</p></div><div class="timeline-item"><span>2</span><p>Você poderá conversar diretamente pelo chat privado.</p></div><div class="timeline-item"><span>3</span><p>O andamento e os arquivos finais aparecerão na página do pedido.</p></div><div class="callout-note"><b>Uma dica:</b> quanto mais específica a descrição, mais fácil será planejar o software.</div></div></aside>
+</div>
+{% endblock %}

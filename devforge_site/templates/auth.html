@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Criar conta' if mode == 'register' else 'Entrar' }} · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="auth-layout">
+  <section class="form-panel auth-panel">
+    <a href="{{ url_for('home') }}" class="back-link">← Voltar ao início</a>
+    <div class="overline">ÁREA DO CLIENTE</div>
+    <h1>{{ 'Comece seu próximo projeto.' if mode == 'register' else 'Que bom ter você de volta.' }}</h1>
+    <p class="subtle">{{ 'Crie sua conta para enviar pedidos, conversar e receber arquivos.' if mode == 'register' else 'Acesse seus pedidos, mensagens e arquivos de entrega.' }}</p>
+    <form method="post" class="form-stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if mode == 'login' %}<input type="hidden" name="next" value="{{ next_path or '' }}">{% endif %}
+      {% if mode == 'register' %}<div class="field"><label for="name">Seu nome</label><input id="name" type="text" name="name" maxlength="90" minlength="2" required placeholder="Como podemos chamar você?" autocomplete="name" value="{{ request.form.get('name','') }}"></div>{% endif %}
+      <div class="field"><label for="email">E-mail</label><input id="email" type="email" name="email" maxlength="254" required placeholder="seuemail@exemplo.com" autocomplete="email" value="{{ request.form.get('email','') }}"></div>
+      <div class="field"><label for="password">Senha</label><input id="password" type="password" name="password" minlength="{{ '8' if mode == 'register' else '1' }}" required placeholder="{{ 'Mínimo de 8 caracteres' if mode == 'register' else 'Sua senha' }}" autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}"></div>
+      <button class="btn btn-primary btn-wide" type="submit">{{ 'Criar minha conta →' if mode == 'register' else 'Entrar na plataforma →' }}</button>
+    </form>
+    <p class="auth-switch">{% if mode == 'register' %}Já possui uma conta? <a href="{{ url_for('login') }}">Fazer login</a>{% else %}Novo por aqui? <a href="{{ url_for('register') }}">Criar uma conta</a>{% endif %}</p>
+  </section>
+  <aside class="auth-aside"><div class="aside-deco">✧</div><div class="overline">UM SÓ LUGAR PARA TUDO</div><h2>Organize seu software do início ao fim.</h2><p>Briefing, conversa, ajustes e entrega. Sem perder informações em dezenas de mensagens.</p><div class="aside-feature">✓ Histórico privado de mensagens</div><div class="aside-feature">✓ Compartilhamento de arquivos</div><div class="aside-feature">✓ Atualizações de status</div></aside>
+</div>
+{% endblock %}

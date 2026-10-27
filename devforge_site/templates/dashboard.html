@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Meus pedidos · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="overline">PAINEL DO CLIENTE</div><h1>Meus pedidos<span class="heading-dot">.</span></h1><p class="subtle">Acompanhe projetos, envie alterações e baixe suas entregas.</p></div><a class="btn btn-primary" href="{{ url_for('new_request') }}">+ Novo pedido</a></div>
+{% if projects %}
+  <div class="summary-pill">Você tem <b>{{ projects|length }} projeto{{ 's' if projects|length != 1 else '' }}</b> na plataforma.</div>
+  <div class="project-grid">
+    {% for p in projects %}
+      <a href="{{ url_for('project_detail', project_id=p['id']) }}" class="project-card">
+        <div class="project-top"><span class="project-number">PEDIDO #{{ '%04d'|format(p['id']) }}</span><span class="status status-{{ p['status'] }}">{{ status_labels[p['status']] }}</span></div>
+        <h3>{{ p['title'] }}</h3><p>{{ type_labels.get(p['project_type'],'Outro software') }}</p>
+        <div class="project-card-footer"><span>◷ {{ format_datetime(p['updated_at']) }}</span><span>{{ p['message_count'] }} mensagens</span><span class="forward">↗</span></div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state"><div class="empty-symbol">✳</div><h2>Ainda não há pedidos.</h2><p>Envie sua primeira ideia e acompanhe todo o processo por aqui.</p><a href="{{ url_for('new_request') }}" class="btn btn-primary">Criar meu primeiro pedido ↗</a></div>
+{% endif %}
+{% endblock %}

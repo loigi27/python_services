@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Crie seu próximo software · {{ site_name }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="status-dot"></span> IDEIAS QUE VIRAM SOFTWARE</div>
+    <h1>Você imagina.<br><span class="gradient-text">A gente desenvolve.</span></h1>
+    <p class="hero-description">Seu site, aplicativo, jogo ou automação começa aqui. Envie sua ideia, acompanhe o desenvolvimento pelo chat e receba seus arquivos em uma área privada.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-large" href="{{ url_for('new_request') if current_user and current_user['role']=='client' else url_for('register') }}">Quero solicitar um projeto <span>↗</span></a>
+      <a href="#como-funciona" class="btn btn-outline btn-large">Entenda o processo ↓</a>
+    </div>
+    <div class="hero-trust"><span class="trust-icon">✓</span> Solicitação gratuita para orçamento <span class="trust-separator">·</span> Conversa e entrega na mesma plataforma</div>
+  </div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="visual-grid"></div>
+    <div class="floating-mini mini-top"><span class="mini-check">✓</span> Projeto recebido <span class="mini-fade">AGORA</span></div>
+    <div class="sample-app">
+      <div class="sample-top"><div class="window-dots"><i></i><i></i><i></i></div><span>seu-projeto.dev</span><span>↗</span></div>
+      <div class="sample-inner">
+        <span class="sample-label">PROJETO #001</span>
+        <h3>Sua ideia, <em>em construção.</em></h3>
+        <p>Do briefing até o produto final, tudo organizado.</p>
+        <div class="sample-progress"><span></span></div>
+        <div class="sample-status"><span>Em desenvolvimento</span><span>68%</span></div>
+        <div class="sample-chat"><span class="avatar">D</span><div><b>DevForge Studio</b><small>Enviamos uma atualização para seu projeto ✨</small></div></div>
+      </div>
+    </div>
+    <div class="floating-mini mini-bottom"><span>◆</span> Entrega centralizada <span class="mini-check">✓</span></div>
+  </div>
+</section>
+<section class="section" id="servicos">
+  <div class="section-top"><div><span class="overline">O QUE PODEMOS CRIAR</span><h2>O que você precisa construir?</h2></div><p>Da sua primeira ideia ao sistema para sua empresa, cada projeto pode ser personalizado.</p></div>
+  <div class="service-grid">
+    <div class="service-card"><div class="service-icon">◈</div><h3>Sites e sistemas web</h3><p>Portfólios, plataformas, dashboards e sistemas para negócios.</p><span>Websites & web apps ↗</span></div>
+    <div class="service-card"><div class="service-icon">▣</div><h3>Aplicativos</h3><p>Aplicativos para Windows, Android e outras plataformas.</p><span>Desktop & mobile ↗</span></div>
+    <div class="service-card"><div class="service-icon">✳</div><h3>Bots e automações</h3><p>Ferramentas que automatizam tarefas e ajudam no dia a dia.</p><span>Python & integrações ↗</span></div>
+    <div class="service-card"><div class="service-icon">⌘</div><h3>Projetos personalizados</h3><p>Jogos, utilitários e soluções de software sob medida.</p><span>Projetos especiais ↗</span></div>
+  </div>
+</section>
+<section class="section process-section" id="como-funciona">
+  <span class="overline">PROCESSO SIMPLES</span><h2>Da conversa à entrega.</h2>
+  <div class="steps">
+    <div class="step"><div class="step-no">01</div><h3>Conte sua ideia</h3><p>Descreva o projeto, escolha a plataforma e envie arquivos de referência.</p></div>
+    <div class="step"><div class="step-no">02</div><h3>Acompanhe pelo chat</h3><p>Converse diretamente, envie alterações e confira o andamento do pedido.</p></div>
+    <div class="step"><div class="step-no">03</div><h3>Receba o resultado</h3><p>Os arquivos finais ficam disponíveis para download na sua conta.</p></div>
+  </div>
+</section>
+<section class="bottom-cta"><div><span class="overline">VAMOS CONSTRUIR ALGO?</span><h2>Seu próximo projeto começa com uma mensagem.</h2><p>Conte a sua ideia. O preço e os detalhes são combinados após a análise.</p></div><a href="{{ url_for('new_request') if current_user and current_user['role']=='client' else url_for('register') }}" class="btn btn-primary btn-large">Enviar minha ideia ↗</a></section>
+{% endblock %}
