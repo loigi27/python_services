@@ -124,3 +124,51 @@ Para testar com pytest:
 - O script tem destinatários administrativos restritos e token, mas a chave e a URL do endpoint devem permanecer privadas; quando suspeitar de exposição, altere o token no Apps Script e no Render.
 - O sistema não inclui pagamento, confirmação de e-mail, redefinição de senha ou antivírus integrado. Faça testes e revise segurança/privacidade antes de abrir ao público.
 - **O Google Apps Script não substitui o banco:** ele serve para envio de e-mails. Os dados e arquivos precisam de armazenamento externo para sobreviver ao Render Free.
+
+
+## Painel admin e verificação do e-mail
+
+- Após fazer login com a conta que tem `role=admin`, use `/admin`. O menu mostra **Painel admin**.
+- Se não existir nenhum admin no banco, adicione no Render `BOOTSTRAP_ADMIN_EMAIL=loigi2704@gmail.com`, `BOOTSTRAP_ADMIN_NAME=Administrador` e `BOOTSTRAP_ADMIN_PASSWORD` com pelo menos 12 caracteres. Faça deploy e depois remova a senha da configuração.
+- Se o banco **já tiver um administrador diferente**, as variáveis `BOOTSTRAP_*` não o substituem. Para promover uma conta existente do próprio usuário, abra o **SQL Editor** do Supabase, com autenticação de proprietário, e execute `UPDATE public.users SET role='admin' WHERE email='loigi2704@gmail.com';` após confirmar que a conta já existe. Não dê `admin` a usuários desconhecidos. Depois, faça logout e novo login.
+- A seção **Diagnóstico de e-mail** em `/admin` indica quais variáveis estão ausentes e permite enviar **um e-mail de teste para cada um dos dois administradores**, no máximo 3 vezes por hora. Nunca expõe senhas e tokens.
+- O arquivo `apps_script/Code.gs` e o backend **exigem token de pelo menos 32 caracteres**, exatamente igual no Render e nas Propriedades do script do Apps Script. Se você o configurou com menos caracteres, gere outro antes de testar. O botão informa erros de configuração; as mensagens específicas de rejeição (`nao_autorizado`, `cota_diaria_esgotada`, etc.) aparecem em **Render > Logs**.
+- Se alterar o **código** do Apps Script, vá a **Implantar > Gerenciar implantações > Editar > Nova versão**. Alterar apenas as Propriedades do script não exige nova versão.
+- O endpoint `/exec` aberto em navegador apenas testa `doGet`; não garante que `doPost` e o envio funcionem.
+
+
+## Diagnóstico de e-mail — revisão 2.1
+
+Esta versão inclui `mail_gateway.py` para seguir os redirecionamentos do Google com
+segurança, repetir **somente o GET de confirmação** diante de algumas falhas transitórias,
+e exibir o erro no painel administrativo. Nunca repete o `POST` de envio automaticamente,
+porque o Google pode ter enviado o e-mail antes de uma falha na confirmação.
+
+1. Atualize **todos os arquivos** na raiz do repositório usado pelo Render, inclusive
+   `app.py` e o novo `mail_gateway.py`; faça deploy.
+2. No Apps Script, substitua o `Code.gs` e use **Implantar → Gerenciar implantações → Editar
+   → Versão: Nova versão → Implantar**. A URL `/exec` existente permanece a mesma.
+3. Abra a URL `/exec` no navegador. A resposta deve incluir `"version":"2.1"`.
+   Se não aparecer, o Google ainda está usando a versão antiga. Isso é apenas o teste
+   de vida, não prova que os e-mails funcionam.
+4. Em `/admin`, use **Enviar e-mail de teste**. Se falhar, leia a mensagem que traz
+   o código, ou abra **Render → Logs** e busque `Apps Script: falha de envio`.
+5. Em **Apps Script → Execuções**, verifique se `doPost` foi chamado no momento
+   do teste. Se não apareceu, o problema está antes do Apps Script (por exemplo,
+   URL ou permissões). Se apareceu com erro, leia os detalhes da execução.
+
+Códigos comuns (a interface também mostra orientações):
+
+| Código | Interpretação |
+|---|---|
+| `nao_autorizado` | Tokens divergentes ou token com menos de 32 caracteres |
+| `conta_remetente_incorreta` | Implantação executando com outra conta |
+| `cota_diaria_esgotada` | Google atingiu limite diário |
+| `http_403` | Permissões do Apps Script ou acesso bloqueado |
+| `http_404` | Endpoint inválido ou redirecionamento de confirmação indisponível |
+| `resposta_nao_json` | Resposta Google inesperada, possivelmente HTML |
+| `falha_envio` | Apps Script registrou uma exceção; verificar Execuções |
+
+O envio depende de permissões e cotas do Google; **nenhum teste local substitui
+uma chamada real autorizada ao Apps Script**. Nunca publique `DEVFORGE_MAIL_TOKEN`,
+`DATABASE_URL` ou chaves Supabase em arquivos públicos.

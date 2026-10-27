@@ -18,6 +18,7 @@ import uuid
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import quote
+from mail_gateway import MailGatewayError, deliver_appscript
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from functools import wraps
@@ -28,7 +29,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 from flask import (
     Flask, abort, flash, g, jsonify, redirect, render_template, request,
-    send_file, send_from_directory, session, url_for,
+    send_file, send_from_directory, session, url_for, has_request_context,
 )
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -486,18 +487,15 @@ def send_notification(recipient, subject, body):
         kind = "admin" if recipient.lower() in admin_emails else "client"
         data = json.dumps({"token": token, "to": recipient, "kind": kind,
                            "subject": subject, "body": str(body)[:25000]}, ensure_ascii=False).encode("utf-8")
-        req = Request(endpoint, data=data, method="POST", headers={
-            "Content-Type": "application/json", "User-Agent": "DevForge-Studio/2.0",
-        })
         try:
-            with urlopen(req, timeout=35) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-            if payload.get("ok") is True:
-                return True
-            app.logger.error("Apps Script recusou envio: %s", payload.get("error", "sem detalhe"))
-        except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as error:
-            app.logger.error("Apps Script sem confirmação de envio: %s", type(error).__name__)
-        return False
+            deliver_appscript(endpoint, data)
+            return True
+        except MailGatewayError as error:
+            # Só registra um código seguro, sem corpo do e-mail, token ou URL.
+            app.logger.error("Apps Script: falha de envio (%s)", error)
+            if has_request_context():
+                g.mail_error_codes = getattr(g, "mail_error_codes", []) + [str(error)]
+            return False
 
     if provider == "resend":
         key = os.getenv("RESEND_API_KEY", "").strip()
@@ -551,6 +549,23 @@ def send_notification(recipient, subject, body):
     except (OSError, smtplib.SMTPException, ValueError) as error:
         app.logger.error("Falha no envio SMTP: %s", error)
         return False
+
+
+def mail_config_health():
+    """Informações não secretas, apresentadas só ao administrador."""
+    provider = os.getenv("MAIL_PROVIDER", "smtp").strip().lower()
+    email_url = os.getenv("GOOGLE_MAIL_URL", "").strip()
+    token = os.getenv("DEVFORGE_MAIL_TOKEN", "").strip()
+    expected = {"loigi2704@gmail.com", "luigi.benicio@gmail.com"}
+    recipients = admin_recipients()
+    return {
+        "provider": provider,
+        "provider_ok": provider == "appscript",
+        "url_ok": email_url.startswith("https://script.google.com/macros/s/") and email_url.endswith("/exec"),
+        "token_ok": len(token) >= 32,
+        "recipients_ok": set(recipients) == expected,
+        "recipients": recipients,
+    }
 
 
 def admin_recipients():
@@ -958,7 +973,49 @@ def admin_dashboard():
     stats = {s: 0 for s in STATUSES}
     stats.update({row["status"]: row["total"] for row in stats_rows})
     total_users = db.execute("SELECT COUNT(*) AS c FROM users WHERE role='client'").fetchone()["c"]
-    return render_template("admin.html", projects=projects, stats=stats, total_users=total_users, q=q, selected_status=status)
+    return render_template(
+        "admin.html", projects=projects, stats=stats, total_users=total_users,
+        q=q, selected_status=status, mail_config=mail_config_health(),
+    )
+
+
+@app.post("/admin/test-email")
+@admin_required
+@limiter.limit("3 per hour", methods=["POST"])
+def test_admin_email():
+    """Teste manual e restrito: nunca aceita destinatários informados pelo navegador."""
+    config = mail_config_health()
+    if not all(config[key] for key in ("provider_ok", "url_ok", "token_ok", "recipients_ok")):
+        flash("E-mail não configurado corretamente. Confira o diagnóstico abaixo e o token de 32+ caracteres.", "error")
+        return redirect(url_for("admin_dashboard") + "#email-diagnostico")
+    status = []
+    for recipient in config["recipients"]:
+        ok = send_notification(
+            recipient,
+            "[TESTE] DevForge Studio - Notificações",
+            "Teste de envio do DevForge. Se recebeu esta mensagem, o Apps Script aceitou o envio."
+        )
+        status.append((recipient, ok))
+    if all(ok for _, ok in status):
+        flash("Apps Script confirmou o envio para os dois e-mails. Confira as caixas de entrada e Spam.", "success")
+    else:
+        failed = ", ".join(address for address, ok in status if not ok)
+        codes = list(dict.fromkeys(getattr(g, "mail_error_codes", [])))
+        hints = {
+            "nao_autorizado": "Token diferente no Render e nas Propriedades do Apps Script, ou com menos de 32 caracteres.",
+            "conta_remetente_incorreta": "Implante o Apps Script executando como loigi2704@gmail.com.",
+            "cota_diaria_esgotada": "Cota de e-mails do Google esgotada hoje.",
+            "http_401": "Verifique o acesso público da implantação Apps Script.",
+            "http_403": "Verifique se a implantação está acessível por Qualquer pessoa.",
+            "http_404": "Confira a URL /exec e a implantação mais recente.",
+            "resposta_nao_json": "Google devolveu uma página em vez de JSON; confira Apps Script > Execuções e a implantação.",
+            "falha_envio": "O Apps Script falhou internamente. Abra Apps Script > Execuções.",
+            "redirecionamento_inesperado": "A resposta do Google foi redirecionada para um endereço inesperado.",
+        }
+        first = codes[0] if codes else "erro_desconhecido"
+        hint = hints.get(first, "Veja o código nos logs do Render e as Execuções do Apps Script.")
+        flash("Falha para: " + failed + ". Código: " + first + ". " + hint, "error")
+    return redirect(url_for("admin_dashboard") + "#email-diagnostico")
 
 
 @app.get("/health")

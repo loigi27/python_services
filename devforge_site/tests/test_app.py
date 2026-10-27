@@ -152,3 +152,27 @@ def test_messages_notify_admin_and_reply_to_client(client, monkeypatch):
     })
     assert mail[-1][0] == "pablo@example.com"
     assert "vou alterar" in mail[-1][2]
+
+
+def test_admin_email_diag_permissions(client, monkeypatch):
+    """Diagnóstico e teste de envio só são acessíveis com sessão admin."""
+    assert client.get("/admin").status_code == 302
+    register(client, "Cliente Exemplo", "client-only@example.com")
+    assert client.get("/admin").status_code == 403
+    assert client.post("/admin/test-email", data={"csrf_token": csrf(client)}).status_code == 403
+    logout(client)
+    create_admin()
+    login(client, "admin@example.com")
+    # O teste não deve enviar nada quando as variáveis ainda estão incompletas.
+    monkeypatch.setenv("MAIL_PROVIDER", "appscript")
+    monkeypatch.setenv("GOOGLE_MAIL_URL", "https://script.google.com/macros/s/test/exec")
+    monkeypatch.setenv("DEVFORGE_MAIL_TOKEN", "curto")
+    monkeypatch.setenv("ADMIN_EMAILS", "loigi2704@gmail.com,luigi.benicio@gmail.com")
+    assert client.get("/admin").status_code == 200
+    assert b"Token curto ou ausente" in client.get("/admin").data
+    assert client.post("/admin/test-email", data={"csrf_token": csrf(client)}).status_code == 302
+    sent = []
+    monkeypatch.setenv("DEVFORGE_MAIL_TOKEN", "a" * 40)
+    monkeypatch.setattr(site, "send_notification", lambda addr, *args: sent.append(addr) or True)
+    assert client.post("/admin/test-email", data={"csrf_token": csrf(client)}).status_code == 302
+    assert sent == ["loigi2704@gmail.com", "luigi.benicio@gmail.com"]

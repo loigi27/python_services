@@ -20,7 +20,11 @@
         <nav class="nav-links" aria-label="Navegação principal">
           <a href="{{ url_for('home') }}#como-funciona">Como funciona</a>
           {% if current_user %}
-            <a href="{{ url_for('dashboard') }}">{{ 'Administração' if current_user['role'] == 'admin' else 'Meus pedidos' }}</a>
+            {% if current_user['role'] == 'admin' %}
+              <a class="nav-cta" href="{{ url_for('admin_dashboard') }}">Painel admin ↗</a>
+            {% else %}
+              <a href="{{ url_for('dashboard') }}">Meus pedidos</a>
+            {% endif %}
             {% if current_user['role'] == 'client' %}<a class="nav-cta" href="{{ url_for('new_request') }}">Novo pedido <span>↗</span></a>{% endif %}
             <form method="post" action="{{ url_for('logout') }}" class="inline-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

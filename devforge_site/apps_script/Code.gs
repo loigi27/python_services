@@ -28,7 +28,7 @@ function isEmail_(value) {
 
 function doGet() {
   // Apenas teste de vida: não envia e-mail via GET.
-  return reply_({ ok: true, service: 'DevForge Mail Gateway', status: 'ready' });
+  return reply_({ ok: true, service: 'DevForge Mail Gateway', status: 'ready', version: '2.1' });
 }
 
 function doPost(e) {

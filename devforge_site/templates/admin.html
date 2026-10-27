@@ -3,6 +3,26 @@
 {% block content %}
 <div class="page-heading"><div><div class="overline">PAINEL ADMINISTRATIVO</div><h1>Central de projetos<span class="heading-dot">.</span></h1><p class="subtle">Gerencie solicitações, responda clientes e envie entregas.</p></div><span class="admin-chip">◆ ACESSO ADMIN</span></div>
 <div class="stats-grid"><div class="stat-card"><span>Total de pedidos</span><strong>{{ stats.values()|sum }}</strong><small>Em toda a plataforma</small></div><div class="stat-card"><span>Novos pedidos</span><strong>{{ stats['novo'] }}</strong><small>Aguardando atendimento</small></div><div class="stat-card"><span>Em desenvolvimento</span><strong>{{ stats['desenvolvimento'] }}</strong><small>Em andamento</small></div><div class="stat-card"><span>Clientes cadastrados</span><strong>{{ total_users }}</strong><small>Contas de clientes</small></div></div>
+<section class="mail-diagnostics" id="email-diagnostico" aria-label="Diagnóstico de notificações">
+  <div class="mail-diagnostics-heading">
+    <div>
+      <div class="overline">CONFIGURAÇÕES ADMINISTRATIVAS</div>
+      <h2>Diagnóstico de e-mail</h2>
+      <p class="subtle">Teste o envio para os dois administradores sem expor tokens ou senhas.</p>
+    </div>
+    <form method="post" action="{{ url_for('test_admin_email') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-primary" type="submit">Enviar e-mail de teste</button>
+    </form>
+  </div>
+  <div class="mail-check-grid">
+    <span><b>Provedor Apps Script</b><strong class="{{ 'mail-ok' if mail_config.provider_ok else 'mail-bad' }}">{{ 'Configurado' if mail_config.provider_ok else 'Verifique MAIL_PROVIDER' }}</strong></span>
+    <span><b>URL /exec</b><strong class="{{ 'mail-ok' if mail_config.url_ok else 'mail-bad' }}">{{ 'Configurada' if mail_config.url_ok else 'Ausente ou inválida' }}</strong></span>
+    <span><b>Token (32+ caracteres)</b><strong class="{{ 'mail-ok' if mail_config.token_ok else 'mail-bad' }}">{{ 'Tamanho válido' if mail_config.token_ok else 'Token curto ou ausente' }}</strong></span>
+    <span><b>Destinatários</b><strong class="{{ 'mail-ok' if mail_config.recipients_ok else 'mail-bad' }}">{{ 'Dois destinatários corretos' if mail_config.recipients_ok else 'Revise ADMIN_EMAILS' }}</strong></span>
+  </div>
+  <p class="tiny-text">O diagnóstico não verifica se o token do Render é idêntico ao do Apps Script. Para isso, use o botão de teste. Cada teste tenta enviar dois e-mails.</p>
+</section>
 <div class="table-panel"><div class="table-title"><h2>Todos os pedidos</h2><p>Exibindo até 250 resultados recentes</p></div>
   <form class="filter-bar" method="get" action="{{ url_for('admin_dashboard') }}"><input type="search" name="q" value="{{ q }}" placeholder="Buscar cliente, e-mail, projeto ou ID"><select name="status"><option value="">Todos os status</option>{% for k,v in status_labels.items() %}<option value="{{ k }}" {% if selected_status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select><button type="submit" class="btn btn-secondary">Filtrar</button></form>
   <div class="table-scroll"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Tipo</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody>{% for p in projects %}<tr><td><strong>{{ p['title'] }}</strong><small>#{{ '%04d'|format(p['id']) }}</small></td><td>{{ p['client_name'] }}<small>{{ p['client_email'] }}</small></td><td>{{ type_labels.get(p['project_type'],'Outro') }}</td><td><span class="status status-{{ p['status'] }}">{{ status_labels[p['status']] }}</span></td><td class="nowrap">{{ format_datetime(p['updated_at']) }}</td><td><a class="small-action" href="{{ url_for('project_detail', project_id=p['id']) }}">Abrir ↗</a></td></tr>{% else %}<tr><td colspan="6" class="table-empty">Nenhum pedido corresponde aos filtros.</td></tr>{% endfor %}</tbody></table></div>
